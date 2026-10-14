@@ -1,0 +1,21 @@
+plugins { id 'com.android.application' }
+android {
+    namespace 'ar.com.artiko.envio1702'
+    compileSdk 34
+    defaultConfig {
+        applicationId 'ar.com.artiko.envio1702'
+        minSdk 26
+        targetSdk 34
+        versionCode 1
+        versionName '1.0'
+    }
+    buildTypes {
+        release { minifyEnabled false; signingConfig signingConfigs.debug }
+    }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+}
+dependencies {
+    // Lector de QR de Google: no pide permiso de cámara y funciona en casi todos los Android.
+    implementation 'com.google.android.gms:play-services-code-scanner:16.1.0'
+    implementation 'androidx.core:core:1.13.1'
+}
