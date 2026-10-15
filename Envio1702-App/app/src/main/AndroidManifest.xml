@@ -11,7 +11,7 @@
         <intent><action android:name="android.media.action.IMAGE_CAPTURE" /></intent>
     </queries>
     <application
-        android:label="Envío 1702"
+        android:label="1702 Logística"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher"
         android:theme="@style/Tema"
