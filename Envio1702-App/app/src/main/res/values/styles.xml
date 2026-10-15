@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Tema" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">#1B2A5C</item>
+        <item name="android:navigationBarColor">#1B2A5C</item>
+        <item name="android:windowBackground">@color/fondo</item>
+    </style>
+    <color name="fondo">#F3F4F8</color>
+    <color name="marca">#1B2A5C</color>
+    <color name="granate">#B0192F</color>
+</resources>
