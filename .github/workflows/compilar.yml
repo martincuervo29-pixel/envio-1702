@@ -1,5 +1,7 @@
 name: Compilar app
 on: [push, workflow_dispatch]
+permissions:
+  contents: write
 jobs:
   apk:
     runs-on: ubuntu-latest
@@ -13,5 +15,14 @@ jobs:
       - uses: gradle/actions/setup-gradle@v3
         with: { gradle-version: '8.7' }
       - run: gradle assembleRelease
+      - run: cp app/build/outputs/apk/release/app-release.apk 1702-Logistica.apk
       - uses: actions/upload-artifact@v4
-        with: { name: Envio1702-apk, path: Envio1702-App/app/build/outputs/apk/release/*.apk }
+        with: { name: Envio1702-apk, path: Envio1702-App/1702-Logistica.apk }
+      # Publica la app en un link fijo y público (siempre la última versión)
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: app
+          name: 1702 Logística (última versión)
+          body: Descargá 1702-Logistica.apk desde el celular e instalala.
+          make_latest: true
+          files: Envio1702-App/1702-Logistica.apk
