@@ -14,12 +14,19 @@ jobs:
         with: { distribution: temurin, java-version: '17' }
       - uses: gradle/actions/setup-gradle@v3
         with: { gradle-version: '8.7' }
+      # Firma fija (secreto KEYSTORE_B64): así cada versión se instala encima de la anterior
+      - name: Firma
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then echo "$KEYSTORE_B64" | base64 -d > app/firma.jks; echo "FIRMA=si" >> "$GITHUB_ENV"; echo "Firma propia"; else echo "Sin secreto KEYSTORE_B64: se compila para probar pero no se publica"; fi
       - run: gradle assembleRelease
       - run: cp app/build/outputs/apk/release/app-release.apk 1702-Logistica.apk
       - uses: actions/upload-artifact@v4
         with: { name: Envio1702-apk, path: Envio1702-App/1702-Logistica.apk }
       # Publica la app en un link fijo y público (siempre la última versión)
       - uses: softprops/action-gh-release@v2
+        if: env.FIRMA == 'si'
         with:
           tag_name: app
           name: 1702 Logística (última versión)
