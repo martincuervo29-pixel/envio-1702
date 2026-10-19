@@ -6,6 +6,7 @@ import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.webkit.GeolocationPermissions;
@@ -40,7 +41,10 @@ import java.io.File;
 public class MainActivity extends Activity {
 
     static final String URL_APP = "https://script.google.com/macros/s/AKfycbwxp8prBqBwGMTr13AHtiaGm_o-Vk13tCRW23p6h5xQauLet7MoZkc6GOsTLCEzIjm2/exec?r=app";
-    static final int REQ_FOTO = 11, REQ_PERMISOS = 12;
+    static final String URL_EXEC = "https://script.google.com/macros/s/AKfycbwxp8prBqBwGMTr13AHtiaGm_o-Vk13tCRW23p6h5xQauLet7MoZkc6GOsTLCEzIjm2/exec";
+    static final int REQ_FOTO = 11, REQ_PERMISOS = 12, REQ_SEGUIMIENTO = 13;
+    String tokenPendiente = null;
+    long ultimoPedidoPermiso = 0;
 
     WebView web;
     ValueCallback<Uri[]> archivoCallback;
@@ -163,7 +167,43 @@ public class MainActivity extends Activity {
 
         /** null mientras escanea, "" si se canceló, o el texto del QR. */
         @JavascriptInterface public String resultado() { String r = ultimoQR; if (r != null) ultimoQR = null; return r; }
+
+        /** Ruta abierta: compartir la ubicación en segundo plano (con aviso fijo en el celular). */
+        @JavascriptInterface public void iniciarSeguimiento(String token) {
+            runOnUiThread(() -> {
+                if (token == null || token.isEmpty()) return;
+                if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                    SeguimientoService.iniciar(MainActivity.this, token);
+                    if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+                            && System.currentTimeMillis() - ultimoPedidoPermiso > 600000) {
+                        ultimoPedidoPermiso = System.currentTimeMillis();
+                        requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, REQ_PERMISOS);
+                    }
+                    return;
+                }
+                if (System.currentTimeMillis() - ultimoPedidoPermiso < 600000) return;   // no insistir cada minuto
+                ultimoPedidoPermiso = System.currentTimeMillis();
+                tokenPendiente = token;
+                if (Build.VERSION.SDK_INT >= 33)
+                    requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.POST_NOTIFICATIONS}, REQ_SEGUIMIENTO);
+                else
+                    requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQ_SEGUIMIENTO);
+            });
+        }
+
+        @JavascriptInterface public void detenerSeguimiento() { runOnUiThread(() -> SeguimientoService.detener(MainActivity.this)); }
+
+        @JavascriptInterface public boolean seguimientoActivo() { return SeguimientoService.activo(MainActivity.this); }
     }
 
-    @Override public void onRequestPermissionsResult(int req, String[] perms, int[] res) { super.onRequestPermissionsResult(req, perms, res); }
+    @Override public void onRequestPermissionsResult(int req, String[] perms, int[] res) {
+        super.onRequestPermissionsResult(req, perms, res);
+        if (req != REQ_SEGUIMIENTO || tokenPendiente == null) return;
+        if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            SeguimientoService.iniciar(this, tokenPendiente);
+        } else {
+            Toast.makeText(this, "Sin permiso de ubicación, la ruta no se puede seguir en el mapa de la oficina.", Toast.LENGTH_LONG).show();
+        }
+        tokenPendiente = null;
+    }
 }
